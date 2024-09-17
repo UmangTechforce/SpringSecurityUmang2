@@ -4,6 +4,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import com.demo.dto.EmployeeRequstDTO;
 import com.demo.dto.EmployeeResponseDTO;
 import com.demo.dto.EmployeeUpdateDTO;
@@ -80,4 +82,16 @@ public interface EmployeeService {
 	 * @return
 	 */
 	Boolean existByEmail(EmployeeRequstDTO employeeRequstDTO);
+	
+	
+	
+	/**
+	 * 
+	 * Service to save the employee with csv file
+	 * 
+	 * 
+	 * @param file
+	 * @return
+	 */
+	Integer saveImportedEmployee(MultipartFile file , Principal principal);
 }

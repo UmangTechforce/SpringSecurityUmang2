@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.demo.config.ResponseHandler;
 import com.demo.dto.DepartmentDTO;
@@ -107,6 +109,24 @@ public class AdminController {
 				.build()
 				.create();
 
+	}
+	
+	@PostMapping("/file/employee")
+	public ResponseEntity<Object> uploadEmployeeCsv(@RequestPart("file") MultipartFile file, Principal principal){
+		
+		log.info("In AdminController inside uploadEmployeeCsv() --Enter");
+
+		
+		Integer count = employeeService.saveImportedEmployee(file, principal);
+		
+		log.info("In AdminController inside uploadEmployeeCsv() --Exit");
+		
+		return new ResponseHandler.ResponseBuilder()
+				.setMessage(count+" data added")
+				.setStatus(HttpStatus.CREATED)
+				.build()
+				.create();
+		
 	}
 
 }

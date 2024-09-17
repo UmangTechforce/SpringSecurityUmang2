@@ -4,6 +4,7 @@ import java.security.Principal;
 
 import com.demo.dto.DepartmentDTO;
 import com.demo.entity.Department;
+import com.demo.entity.Office;
 
 public interface DepartmentService {
 	
@@ -25,5 +26,29 @@ public interface DepartmentService {
 	 * @return
 	 */
 	Department getDepartmentById(Long id);
+	
+	
+	/**
+	 * 
+	 * Service to check if department is present by name in the office
+	 * 
+	 * 
+	 * @param name
+	 * @param office
+	 * @return
+	 */
+	Boolean isDepartmentPresent(String name, Office office);
+	
+	
+	/***
+	 * 
+	 * Service to get department of office by name
+	 * 
+	 * 
+	 * @param name
+	 * @param office
+	 * @return
+	 */
+	Department getDepartmentByNameAndOffice(String name ,Office office );
 
 }

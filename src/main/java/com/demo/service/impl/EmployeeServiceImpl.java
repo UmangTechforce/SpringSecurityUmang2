@@ -1,8 +1,12 @@
 package com.demo.service.impl;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.util.List;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.MessageSource;
@@ -11,7 +15,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.demo.dto.EmployeeCSVDto;
 import com.demo.dto.EmployeeRequstDTO;
 import com.demo.dto.EmployeeResponseDTO;
 import com.demo.dto.EmployeeUpdateDTO;
@@ -19,6 +25,7 @@ import com.demo.dto.LoginRequestDTO;
 import com.demo.dto.LoginResponseDTO;
 import com.demo.entity.Department;
 import com.demo.entity.Employee;
+import com.demo.entity.Office;
 import com.demo.enums.Role;
 import com.demo.mapper.EmployeeMapper;
 import com.demo.repository.EmployeeRepository;
@@ -26,6 +33,9 @@ import com.demo.securityconfig.JwtService;
 import com.demo.service.DepartmentService;
 import com.demo.service.EmployeeService;
 import com.demo.util.Constants;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -154,17 +164,120 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 	@Override
 	public Boolean existByEmail(EmployeeRequstDTO employeeRequstDTO) {
-		
-		if(Constants.EMPTY_STRING.test(employeeRequstDTO.getEmail())) {
-			if(employeeRequstDTO.getId()==null) {
+
+		if (Constants.EMPTY_STRING.test(employeeRequstDTO.getEmail())) {
+			if (employeeRequstDTO.getId() == null) {
 				return employeeRepository.existsByEmailIgnoreCase(employeeRequstDTO.getEmail());
-			}
-			else {
-				return employeeRepository.existsByEmailIgnoreCaseAndIdIsNot(employeeRequstDTO.getEmail(), employeeRequstDTO.getId());
+			} else {
+				return employeeRepository.existsByEmailIgnoreCaseAndIdIsNot(employeeRequstDTO.getEmail(),
+						employeeRequstDTO.getId());
 			}
 		}
-		
+
 		return false;
+	}
+
+	@Override
+	public Integer saveImportedEmployee(MultipartFile file, Principal principal) {
+
+		log.info("In EmployeeService inside saveImportedEmployee() --Enter");
+
+		
+		Integer count = 0;
+		List<EmployeeCSVDto> employeesCsv = extractDataFromCsv(file);
+
+		if (employeesCsv.isEmpty() || employeesCsv == null) {
+			throw new RuntimeException("Someting went wrong while parsing");
+
+		}
+		Employee admin = employeeRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException(
+				messageSource.getMessage("employee.not.found", new Object[] { principal.getName() }, null)));
+		
+		
+		log.info("Admin Office is "+admin.getOffice().getName());
+		
+		
+		for (EmployeeCSVDto employeeCSVDto : employeesCsv) {
+
+			if (validateEmployee(employeeCSVDto, admin.getOffice())) {
+
+				Employee employee = employeeMapper.toEmployeeFromCsv(employeeCSVDto);
+				employee.setOffice(admin.getOffice());
+				employee.setDepartment(departmentService.getDepartmentByNameAndOffice(employeeCSVDto.getDepartment(),
+						admin.getOffice()));
+				employeeRepository.save(employee);
+
+				count++;
+
+			}
+		}
+
+		log.info("In EmployeeService inside saveImportedEmployee() --Exit");
+		return count;
+	}
+
+	/**
+	 * 
+	 * Private method for employee Service to extract all records from the csv file
+	 * and return list
+	 * 
+	 * 
+	 * @param file
+	 * @return
+	 */
+	private List<EmployeeCSVDto> extractDataFromCsv(MultipartFile file) {
+
+		log.info("In EmployeeService inside PRIVATE extractDataFromCsv() --Enter");
+
+		try {
+
+			Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+			HeaderColumnNameMappingStrategy<EmployeeCSVDto> strategy = new HeaderColumnNameMappingStrategy<EmployeeCSVDto>();
+			strategy.setType(EmployeeCSVDto.class);
+
+			CsvToBean<EmployeeCSVDto> csvToBean = new CsvToBeanBuilder<EmployeeCSVDto>(reader)
+
+					.withMappingStrategy(strategy).withIgnoreEmptyLine(Boolean.TRUE)
+					.withIgnoreLeadingWhiteSpace(Boolean.TRUE).build();
+
+			log.info("In EmployeeService inside PRIVATE extractDataFromCsv() --Exit");
+
+			return csvToBean.parse().stream().toList();
+
+		} catch (Exception e) {
+			System.out.println(e);
+			log.error("In EmployeeService inside PRIVATE extractDataFromCsv()");
+
+			return null;
+		}
+
+	}
+
+	private Boolean validateEmployee(EmployeeCSVDto employeeCSVDto, Office office) {
+
+		log.info("In EmployeeService inside PRIVATE validateEmployee() --Enter");
+
+		if (employeeRepository.existsByEmailIgnoreCaseAndOffice(employeeCSVDto.getEmail(), office)) {
+			
+			log.error("In EmployeeService inside PRIVATE validateEmployee() Email not valid");
+			
+			return false;
+		}
+
+		if (!departmentService.isDepartmentPresent(employeeCSVDto.getDepartment(), office)) {
+
+			log.error("In EmployeeService inside PRIVATE validateEmployee() Department not valid");
+			
+			return false;
+		}
+
+		if (!Role.getName(employeeCSVDto.getRole()) && Constants.EMPTY_STRING.test(employeeCSVDto.getRole())) {
+			return false;
+		}
+
+		log.info("In EmployeeService inside PRIVATE validateEmployee() --Exit");
+		return true;
+
 	}
 
 }

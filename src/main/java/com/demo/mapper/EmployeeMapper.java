@@ -4,9 +4,11 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.demo.dto.EmployeeCSVDto;
 import com.demo.dto.EmployeeRequstDTO;
 import com.demo.dto.EmployeeResponseDTO;
 import com.demo.entity.Employee;
+import com.demo.enums.Role;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,5 +49,26 @@ public class EmployeeMapper {
 		employeeResponseDTO.setRole(employee.getRole().toString());
 		employeeResponseDTO.setDepartmentDTO(departmentMapper.toDepartmentDTO(employee.getDepartment()));
 		return employeeResponseDTO;
+	}
+	
+	
+	/**
+	 * 
+	 * Mapper method to convert EmployeeCSVDto to Employee
+	 * 
+	 * 
+	 * @param employeeCSVDto
+	 * @return
+	 */
+	public Employee toEmployeeFromCsv(EmployeeCSVDto employeeCSVDto) {
+		
+		Employee employee = new Employee();
+		BeanUtils.copyProperties(employeeCSVDto, employee);
+		employee.setRole(Role.valueOf(employeeCSVDto.getRole().toUpperCase()));
+		employee.setActive(Boolean.TRUE);
+		employee.setPassword(passwordEncoder.encode(employeeCSVDto.getPassword()));
+	
+		
+		return employee;
 	}
 }

@@ -32,6 +32,8 @@ public class SecurityConfig {
 		security.authorizeHttpRequests(r -> r
 				// This expression states any request to admin is only authorized to ADMIN role
 				.requestMatchers("/admin/**").hasRole("ADMIN")
+				.requestMatchers("/employee/activity/login").hasAnyRole("ADMIN","EMPLOYEE")
+				
 				
 				//This expression states anylogin or department requests are allowed
 				.requestMatchers("/*/login").permitAll()

@@ -4,6 +4,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 
+import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.demo.dto.EmployeeRequstDTO;
@@ -71,8 +72,7 @@ public interface EmployeeService {
 	 * @return
 	 */
 	EmployeeResponseDTO updateEmployeByAdmin(EmployeeUpdateDTO employeeUpdateDTO);
-	
-	
+
 	/**
 	 * 
 	 * Service to validate unique email of employee
@@ -82,9 +82,7 @@ public interface EmployeeService {
 	 * @return
 	 */
 	Boolean existByEmail(EmployeeRequstDTO employeeRequstDTO);
-	
-	
-	
+
 	/**
 	 * 
 	 * Service to save the employee with csv file
@@ -93,5 +91,51 @@ public interface EmployeeService {
 	 * @param file
 	 * @return
 	 */
-	Integer saveImportedEmployee(MultipartFile file , Principal principal);
+	Integer saveImportedEmployee(MultipartFile file, Principal principal);
+
+	/**
+	 * 
+	 * 
+	 * Service to export all employees of the admin's office
+	 * 
+	 */
+	byte[] exportEmployees(Principal principal);
+
+	
+	/**
+	 * Service to change status of employee
+	 * 
+	 * 
+	 * @param id
+	 */
+	void changeStatusEmployee(Long id, Boolean active);
+
+	/**
+	 * 
+	 * 
+	 * Service to get all employees of admin's office
+	 * 
+	 * @param principal
+	 * @return
+	 */
+	Page<Employee> getEmployees(Integer page, Integer size , Principal principal);
+
+	
+	/**
+	 * 
+	 * Service to add employee login activity in history
+	 * 
+	 * @param principal
+	 */
+	void employeeLoginAttendance(Principal principal);
+	
+	
+	
+	/**
+	 * 
+	 * Service to add employee log-out activity in history
+	 * 
+	 * @param principal
+	 */
+	void employeeLogoutAttendance(Principal principal);
 }

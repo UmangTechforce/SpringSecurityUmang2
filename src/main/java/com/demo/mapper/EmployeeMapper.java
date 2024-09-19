@@ -1,5 +1,8 @@
 package com.demo.mapper;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -47,8 +50,23 @@ public class EmployeeMapper {
 		EmployeeResponseDTO employeeResponseDTO = new EmployeeResponseDTO();
 		BeanUtils.copyProperties(employee, employeeResponseDTO);
 		employeeResponseDTO.setRole(employee.getRole().toString());
-		employeeResponseDTO.setDepartmentDTO(departmentMapper.toDepartmentDTO(employee.getDepartment()));
+		if(employee.getDepartment()!=null) {
+			employeeResponseDTO.setDepartmentDTO(departmentMapper.toDepartmentDTO(employee.getDepartment()));
+		}
 		return employeeResponseDTO;
+			
+	}
+	
+	/**
+	 * 
+	 * Mapper method to convert List of Employee to List of Employee Response Dto
+	 * 
+	 * @param employees
+	 * @return
+	 */
+	public List<EmployeeResponseDTO> toEmployeeResponseDTOs(List<Employee> employees){
+		
+		return employees.stream().map(this::toeEmployeeResponseDTO).collect(Collectors.toList());
 	}
 	
 	

@@ -6,10 +6,16 @@ import java.io.Reader;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,16 +29,23 @@ import com.demo.dto.EmployeeResponseDTO;
 import com.demo.dto.EmployeeUpdateDTO;
 import com.demo.dto.LoginRequestDTO;
 import com.demo.dto.LoginResponseDTO;
+import com.demo.entity.AttendanceHistory;
+import com.demo.entity.AttendanceReport;
 import com.demo.entity.Department;
 import com.demo.entity.Employee;
 import com.demo.entity.Office;
+import com.demo.enums.AttendanceStatus;
+import com.demo.enums.LoginStatus;
 import com.demo.enums.Role;
 import com.demo.mapper.EmployeeMapper;
+import com.demo.repository.AttendanceHisotryRepository;
+import com.demo.repository.AttendanceRepository;
 import com.demo.repository.EmployeeRepository;
 import com.demo.securityconfig.JwtService;
 import com.demo.service.DepartmentService;
 import com.demo.service.EmployeeService;
 import com.demo.util.Constants;
+import com.demo.util.ImportExportUtil;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
@@ -57,6 +70,12 @@ public class EmployeeServiceImpl implements EmployeeService {
 	private final DepartmentService departmentService;
 
 	private final EmployeeMapper employeeMapper;
+
+	private final ImportExportUtil importExportUtil;
+
+	private final AttendanceHisotryRepository attendanceHisotryRepository;
+
+	private final AttendanceRepository attendanceRepository;
 
 	@Override
 	public LoginResponseDTO userLogin(LoginRequestDTO loginRequestDTO)
@@ -182,7 +201,6 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 		log.info("In EmployeeService inside saveImportedEmployee() --Enter");
 
-		
 		Integer count = 0;
 		List<EmployeeCSVDto> employeesCsv = extractDataFromCsv(file);
 
@@ -192,11 +210,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 		}
 		Employee admin = employeeRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException(
 				messageSource.getMessage("employee.not.found", new Object[] { principal.getName() }, null)));
-		
-		
-		log.info("Admin Office is "+admin.getOffice().getName());
-		
-		
+
+		log.info("Admin Office is " + admin.getOffice().getName());
+
 		for (EmployeeCSVDto employeeCSVDto : employeesCsv) {
 
 			if (validateEmployee(employeeCSVDto, admin.getOffice())) {
@@ -253,21 +269,29 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 	}
 
+	/**
+	 * 
+	 * Private method to validate employee from csv file
+	 * 
+	 * @param employeeCSVDto
+	 * @param office
+	 * @return
+	 */
 	private Boolean validateEmployee(EmployeeCSVDto employeeCSVDto, Office office) {
 
 		log.info("In EmployeeService inside PRIVATE validateEmployee() --Enter");
 
 		if (employeeRepository.existsByEmailIgnoreCaseAndOffice(employeeCSVDto.getEmail(), office)) {
-			
+
 			log.error("In EmployeeService inside PRIVATE validateEmployee() Email not valid");
-			
+
 			return false;
 		}
 
 		if (!departmentService.isDepartmentPresent(employeeCSVDto.getDepartment(), office)) {
 
 			log.error("In EmployeeService inside PRIVATE validateEmployee() Department not valid");
-			
+
 			return false;
 		}
 
@@ -280,4 +304,132 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 	}
 
+	@Override
+	public byte[] exportEmployees(Principal principal) {
+
+		Employee admin = employeeRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException(
+				messageSource.getMessage("employee.not.found", new Object[] { principal.getName() }, null)));
+
+		List<Employee> employees = employeeRepository.findByOffice(admin.getOffice());
+		String[] headers = { "name", "email", "role", "department" };
+		return importExportUtil.exportToCsv(employees, headers);
+
+	}
+
+	@Override
+	public void changeStatusEmployee(Long id, Boolean active) {
+
+		if (active == null) {
+			throw new RuntimeException("Provide status to change");
+		}
+		Employee employee = getEmployeeById(id);
+		employee.setActive(active);
+		employeeRepository.save(employee);
+
+	}
+
+	@Override
+	public Page<Employee> getEmployees(Integer page, Integer size, Principal principal) {
+
+		log.info("In EmployeeService inside getEmployees() --Enter");
+
+		Pageable pageable = PageRequest.of(page, size);
+		Employee admin = employeeRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException(
+				messageSource.getMessage("employee.not.found", new Object[] { principal.getName() }, null)));
+
+		log.info("In EmployeeService inside getEmployees() --Exit");
+
+		return employeeRepository.findByOffice(admin.getOffice(), pageable);
+	}
+
+	@Override
+	public void employeeLoginAttendance(Principal principal) {
+
+		log.info("In EmployeeService inside employeeLoginAttendance() --Enter");
+
+		Employee employee = employeeRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException(
+				messageSource.getMessage("employee.not.found", new Object[] { principal.getName() }, null)));
+
+		/**
+		 * This condition will put the present attendance in report whenever the user
+		 * login for first time in day
+		 * 
+		 * 
+		 */
+		if (!attendanceRepository.existsByEmployeeAndDate(employee, new Date())) {
+
+			AttendanceReport attendanceReport = new AttendanceReport();
+			attendanceReport.setActive(Boolean.TRUE);
+			attendanceReport.setAttendanceStatus(AttendanceStatus.PRESENT);
+			attendanceReport.setEmployee(employee);
+			attendanceReport.setDate(new Date());
+			attendanceReport.setOffice(employee.getOffice());
+
+			attendanceRepository.save(attendanceReport);
+		}
+
+		AttendanceHistory attendanceHistory = new AttendanceHistory();
+		attendanceHistory.setActive(Boolean.TRUE);
+		attendanceHistory.setDate(new Date());
+		attendanceHistory.setLoginStatus(LoginStatus.LOG_IN);
+		attendanceHistory.setEmployee(employee);
+
+		attendanceHisotryRepository.save(attendanceHistory);
+
+		log.info("In EmployeeService inside employeeLoginAttendance() --Exit");
+	}
+
+	@Override
+	public void employeeLogoutAttendance(Principal principal) {
+
+		log.info("In EmployeeService inside employeeLogoutAttendance() --Exit");
+
+		Employee employee = employeeRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException(
+				messageSource.getMessage("employee.not.found", new Object[] { principal.getName() }, null)));
+
+		AttendanceHistory attendanceHistory = new AttendanceHistory();
+		attendanceHistory.setActive(Boolean.TRUE);
+		attendanceHistory.setDate(new Date());
+		attendanceHistory.setLoginStatus(LoginStatus.LOG_OUT);
+		attendanceHistory.setEmployee(employee);
+
+		attendanceHisotryRepository.save(attendanceHistory);
+
+		log.info("In EmployeeService inside employeeLogoutAttendance() --Exit");
+	}
+
+	/**
+	 * 
+	 * This is private method scheduler to set the absent history of employees
+	 * 
+	 * 
+	 */
+	@Scheduled(cron = "0 58 12 * * ?")
+	public void attendanceScheduler() {
+		
+		log.info("Attendance Schedular started --Enter");
+		
+		List<Employee> activeEmployees = employeeRepository.findByActive(Boolean.TRUE);
+
+		List<AttendanceReport> absentEmployees = new ArrayList<>();
+
+		for (Employee employee : activeEmployees) {
+
+			if (!attendanceRepository.existsByEmployeeAndDate(employee, new Date())) {
+
+				AttendanceReport attendanceReport = new AttendanceReport();
+				attendanceReport.setActive(Boolean.TRUE);
+				attendanceReport.setAttendanceStatus(AttendanceStatus.ABSENT);
+				attendanceReport.setEmployee(employee);
+				attendanceReport.setDate(new Date());
+				attendanceReport.setOffice(employee.getOffice());
+
+				absentEmployees.add(attendanceReport);
+
+			}
+
+		}
+		attendanceRepository.saveAll(absentEmployees);
+		log.info("Attendance Schedular ended --Exit");
+	}
 }

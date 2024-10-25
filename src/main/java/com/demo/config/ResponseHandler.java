@@ -3,11 +3,11 @@ package com.demo.config;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import lombok.Getter;
-
 
 @Getter
 public class ResponseHandler {
@@ -19,6 +19,7 @@ public class ResponseHandler {
 	private Integer totalCount;
 	private Integer pageNumber;
 	private HttpStatus status;
+	private String jwtToken;
 
 	private ResponseHandler(ResponseBuilder responseBuilder) {
 		this.message = responseBuilder.message;
@@ -28,6 +29,7 @@ public class ResponseHandler {
 		this.totalCount = responseBuilder.totalCount;
 		this.pageNumber = responseBuilder.pageNumber;
 		this.status = responseBuilder.status;
+		this.jwtToken = responseBuilder.jwtToken;
 
 	}
 
@@ -40,6 +42,7 @@ public class ResponseHandler {
 		private Integer totalCount;
 		private Integer pageNumber;
 		private HttpStatus status;
+		private String jwtToken;
 
 		public ResponseBuilder setMessage(String message) {
 			this.message = message;
@@ -76,6 +79,11 @@ public class ResponseHandler {
 			return this;
 		}
 
+		public ResponseBuilder setJwtToken(String jwtToken) {
+			this.jwtToken = jwtToken;
+			return this;
+		}
+
 		public ResponseHandler build() {
 
 			return new ResponseHandler(this);
@@ -84,11 +92,11 @@ public class ResponseHandler {
 	}
 
 	private Map<String, Object> responseMap = new HashMap<>();
-	
+
 	public ResponseEntity<Object> create() {
-		
+
 		responseMap.put("status", status);
-		
+
 		if (message != null) {
 			responseMap.put("message", message);
 		}
@@ -101,13 +109,17 @@ public class ResponseHandler {
 		if (hasPrevious != null) {
 			responseMap.put("hasPrevious", hasPrevious);
 		}
-		if(pageNumber!=null) {
+		if (pageNumber != null) {
 			responseMap.put("pageNumber", pageNumber);
 		}
-		if(totalCount!=null) {
+		if (totalCount != null) {
 			responseMap.put("totalCount", totalCount);
 		}
-	
+		if (jwtToken != null && !jwtToken.isEmpty() && !jwtToken.isBlank()) {
+			HttpHeaders headers = new HttpHeaders();
+			headers.set("Authorization", "Bearer " + jwtToken);
+			return new ResponseEntity<>(responseMap, headers, status);
+		}
 		return new ResponseEntity<>(responseMap, status);
 
 	}

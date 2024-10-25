@@ -26,6 +26,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+//@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/employee")
 @Slf4j
@@ -55,8 +56,8 @@ public class EmployeeController {
 
 		log.info("In EmployeeController inside login() --Exit");
 
-		return new ResponseHandler.ResponseBuilder().setData(loginResponseDTO).setStatus(HttpStatus.ACCEPTED)
-				.setMessage(messageSource.getMessage("employee.login", null, null)).build().create();
+		return new ResponseHandler.ResponseBuilder().setData(loginResponseDTO).setStatus(HttpStatus.OK)
+				.setMessage(messageSource.getMessage("employee.login", null, null)).setJwtToken(loginResponseDTO.getToken()).build().create();
 	}
 
 	/**
@@ -90,7 +91,7 @@ public class EmployeeController {
 		log.info("In EmployeeController inside getEmployee() --Exit");
 
 		return new ResponseHandler.ResponseBuilder().setData(employeeResponseDTO)
-				.setMessage(messageSource.getMessage("employee.present", null, null)).setStatus(HttpStatus.ACCEPTED)
+				.setMessage(messageSource.getMessage("employee.present", null, null)).setStatus(HttpStatus.OK)
 				.build().create();
 	}
 

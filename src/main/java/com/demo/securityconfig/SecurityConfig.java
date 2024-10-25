@@ -36,7 +36,7 @@ public class SecurityConfig {
 				
 				
 				//This expression states anylogin or department requests are allowed
-				.requestMatchers("/*/login").permitAll()
+				.requestMatchers("/*/login","/weather/**","/login.html").permitAll()
 				.anyRequest().authenticated());
 
 		security.sessionManagement(Session -> Session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

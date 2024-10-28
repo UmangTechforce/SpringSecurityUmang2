@@ -1,6 +1,7 @@
 package com.demo.service;
 
 import java.security.Principal;
+import java.util.List;
 
 import com.demo.dto.DepartmentDTO;
 import com.demo.entity.Department;
@@ -50,5 +51,14 @@ public interface DepartmentService {
 	 * @return
 	 */
 	Department getDepartmentByNameAndOffice(String name ,Office office );
-
+	
+	
+	/**
+	 * Service to get all department of the admin's office
+	 * 
+	 * @param principal
+	 * @return
+	 */
+	List<DepartmentDTO> getDepartmentsOfAdmin(Principal principal);
+	
 }

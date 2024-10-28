@@ -96,6 +96,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 							new Object[] { loginRequestDTO.getEmail() }, null)));
 			loginResponseDTO.setEmployee(employee);
 			loginResponseDTO.setToken(jwtService.generateToken(loginRequestDTO.getEmail()));
+			loginResponseDTO.setRefreshToken(jwtService.generateRefreshToken(loginRequestDTO.getEmail()));
+		
 		} else {
 			loginResponseDTO.setToken("Login failed");
 		}

@@ -15,5 +15,8 @@ public class LoginResponseDTO implements Serializable {
 
 	private Employee employee;
 
-	String token;
+	private String token;
+	
+	private String refreshToken;
+
 }

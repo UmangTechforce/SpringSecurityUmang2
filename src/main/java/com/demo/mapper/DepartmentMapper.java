@@ -1,5 +1,7 @@
 package com.demo.mapper;
 
+import java.util.List;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
@@ -37,4 +39,13 @@ public class DepartmentMapper {
 		BeanUtils.copyProperties(department, departmentDTO);
 		return departmentDTO;
 	}
+	
+	
+	
+	
+	public List<DepartmentDTO> toDepartmentDTOs(List<Department> departments){
+		return departments.stream().map(this::toDepartmentDTO).toList();
+	}
+	
+	
 }

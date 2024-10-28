@@ -214,6 +214,9 @@ public class AdminController {
 		
 		log.info("In AdminController inside getEmployees() --Exit");
 		
+		
+		
+		
 		return new ResponseHandler.ResponseBuilder()
 				.setData(employeeResponseDTOs)
 				.setMessage("Employees Present")
@@ -221,6 +224,7 @@ public class AdminController {
 				.setPageNumber(employeePage.getNumber()+1)
 				.setTotalCount(employeePage.getTotalPages())
 				.setHasNext(employeePage.hasNext())
+				.setTotalPages(employeePage.getTotalPages())
 				.setHasPrevious(employeePage.hasPrevious())
 				.build()
 				.create();

@@ -20,6 +20,7 @@ public class ResponseHandler {
 	private Integer pageNumber;
 	private HttpStatus status;
 	private String jwtToken;
+	private Integer totalPages;
 
 	private ResponseHandler(ResponseBuilder responseBuilder) {
 		this.message = responseBuilder.message;
@@ -30,6 +31,7 @@ public class ResponseHandler {
 		this.pageNumber = responseBuilder.pageNumber;
 		this.status = responseBuilder.status;
 		this.jwtToken = responseBuilder.jwtToken;
+		this.totalPages = responseBuilder.totalPages;
 
 	}
 
@@ -43,6 +45,7 @@ public class ResponseHandler {
 		private Integer pageNumber;
 		private HttpStatus status;
 		private String jwtToken;
+		private Integer totalPages;
 
 		public ResponseBuilder setMessage(String message) {
 			this.message = message;
@@ -84,6 +87,11 @@ public class ResponseHandler {
 			return this;
 		}
 
+		public ResponseBuilder setTotalPages(Integer totalPages) {
+			this.totalPages = totalPages;
+			return this;
+		}
+
 		public ResponseHandler build() {
 
 			return new ResponseHandler(this);
@@ -114,6 +122,10 @@ public class ResponseHandler {
 		}
 		if (totalCount != null) {
 			responseMap.put("totalCount", totalCount);
+		}
+
+		if (totalPages != null) {
+			responseMap.put("totalPages", totalPages);
 		}
 		if (jwtToken != null && !jwtToken.isEmpty() && !jwtToken.isBlank()) {
 			HttpHeaders headers = new HttpHeaders();

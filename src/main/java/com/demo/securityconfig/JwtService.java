@@ -31,19 +31,38 @@ public class JwtService {
 		Map<String, Object> claims = new HashMap<>();
 		
 		log.info("In JwtService generateToken() enter");
-		
-		
-	
 		return Jwts.builder()
 				.claims()
 				.add(claims)
 				.subject(email)
 				.issuedAt(new Date(System.currentTimeMillis()))
-				.expiration(new Date(System.currentTimeMillis() + 60 * 60 * 30000)).and()
+				.expiration(new Date(System.currentTimeMillis() + 60 * 60 * 30000))
+				.and()
 				.signWith(getKey())
 				.compact();
 		
 	}
+	
+	
+	
+	// Method to generate Jwt Refresh token
+		public String generateRefreshToken(String email) throws InvalidKeyException, NoSuchAlgorithmException {
+			Map<String, Object> claims = new HashMap<>();
+			
+			log.info("In JwtService generateToken() enter");
+			return Jwts.builder()
+					.claims()
+					.add(claims)
+					.subject(email)
+					.issuedAt(new Date(System.currentTimeMillis()))
+					.expiration(new Date(System.currentTimeMillis() + 60 * 60 * 30000))
+					.and()
+					.signWith(getKey())
+					.compact();
+			
+		}
+	
+	
 
 	// Method to generate key for Jwt token
 	private SecretKey getKey() {
